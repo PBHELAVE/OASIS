@@ -1,0 +1,9 @@
+SpeechRecognition
+pyttsx3
+PyAudio
+audioop-lts
+requests
+python-dotenv
+
+
+
