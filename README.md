@@ -70,7 +70,6 @@ JSON : Custom command configuration
 
 # Project Structure
 
-```text
 Python-Task1-Voice-Assistant/
 │
 ├── .env
@@ -91,3 +90,7 @@ Python-Task1-Voice-Assistant/
     ├── 08_generalknowledge.png
     ├── 09_customcommands.png
     └── 10_email.png
+    ├── 11_light.png
+    ├── 12_fan.png
+    ├── 13_speech_not_detected.png
+   

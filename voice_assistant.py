@@ -5,15 +5,17 @@ import time
 import threading
 import webbrowser
 import smtplib
-from datetime import datetime
-from email.message import EmailMessage
-from urllib.parse import quote_plus
 
 import requests
 import speech_recognition as sr
 import pyttsx3
+
+from datetime import datetime
+from email.message import EmailMessage
+from urllib.parse import quote_plus
 from dotenv import load_dotenv
 
+from smart_home import smart_home
 # =========================================================
 # CONFIGURATION
 # =========================================================
@@ -105,17 +107,15 @@ def speak(text):
 # =========================================================
 # SPEECH RECOGNITION
 # =========================================================
+import speech_recognition as sr
 
 recognizer = sr.Recognizer()
 
-
 def listen(timeout=5, phrase_time_limit=8):
-    """Listen to microphone and return recognized text."""
+    """Listen to the microphone and return the recognized command."""
 
     try:
-
         with sr.Microphone() as source:
-
             print("\nListening...")
 
             recognizer.adjust_for_ambient_noise(
@@ -124,58 +124,92 @@ def listen(timeout=5, phrase_time_limit=8):
             )
 
             try:
-
                 audio = recognizer.listen(
                     source,
                     timeout=timeout,
                     phrase_time_limit=phrase_time_limit
                 )
-
             except sr.WaitTimeoutError:
-
                 print("No speech detected.")
-
                 return ""
 
         print("Recognizing...")
 
-        text = recognizer.recognize_google(
-            audio
-        )
+        command = recognizer.recognize_google(audio)
 
-        text = text.lower().strip()
+        print("You:", command)
 
-        print("You:", text)
-
-        return text
+        return command.lower().strip()
 
     except sr.UnknownValueError:
-
-        speak(
-            "Sorry, I could not understand you. "
-            "Please repeat."
-        )
-
+        print("Sorry, I could not understand you.")
         return ""
 
     except sr.RequestError as error:
-
         print("Speech recognition error:", error)
+        speak("Speech recognition service is unavailable.")
+        return ""
 
-        speak(
-            "Speech recognition service is unavailable."
-        )
-
+    except OSError as error:
+        print("Microphone error:", error)
+        speak("I could not access the microphone.")
         return ""
 
     except Exception as error:
+        print("Listening error:", error)
+        return ""
 
+def listen(timeout=5, phrase_time_limit=8):
+    """Listen to microphone and return recognized text."""
+
+    if reminder_active:
+        return ""
+
+    try:
+        with sr.Microphone() as source:
+            print("\nListening...")
+
+            # Helps reduce background-noise problems
+            recognizer.adjust_for_ambient_noise(
+                source,
+                duration=0.5
+            )
+
+            try:
+                audio = recognizer.listen(
+                    source,
+                    timeout=timeout,
+                    phrase_time_limit=phrase_time_limit
+                )
+            except sr.WaitTimeoutError:
+                print("No speech detected.")
+                return ""
+
+        print("Recognizing...")
+
+        text = recognizer.recognize_google(audio)
+
+        print("You:", text)
+
+        return text.lower().strip()
+
+    except sr.UnknownValueError:
+        speak("Sorry, I could not understand you.")
+        return ""
+
+    except sr.RequestError as error:
+        print("Speech recognition error:", error)
+        speak("Speech recognition service is unavailable.")
+        return ""
+
+    except OSError as error:
         print("Microphone error:", error)
+        speak("I could not access the microphone.")
+        return ""
 
-        speak(
-            "I could not access the microphone."
-        )
-
+    except Exception as error:
+        print("Listening error:", error)
+        speak("I could not understand you.")
         return ""
 
 
@@ -1149,6 +1183,37 @@ def detect_intent(command):
 # =========================================================
 
 def process_command(command):
+    
+    command = command.lower().strip()
+
+    print(f"PROCESSING COMMAND: {command}")
+
+    # SMART HOME COMMANDS
+    smart_home_words = [
+        "light",
+        "fan",
+        "ac",
+        "air conditioner",
+        "tv",
+        "door",
+        "smart home",
+        "home status"
+    ]
+
+    if any(word in command for word in smart_home_words):
+        print("DETECTED INTENT: smart_home")
+
+        try:
+            handled = smart_home(command, speak)
+
+            if handled:
+                return True
+
+        except Exception as error:
+            print(f"Smart home error: {error}")
+            speak("Sorry, there was a problem controlling the smart home.")
+            return True
+
 
     print(
         "\nPROCESSING COMMAND:",
@@ -1218,6 +1283,8 @@ def process_command(command):
         )
 
     return True
+
+
 
 
 # =========================================================
